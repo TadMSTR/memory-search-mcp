@@ -16,7 +16,7 @@ Every tool returns a list of:
 ```json
 {
   "index": "claude-memory",
-  "path": "/home/ted/.claude/memory/shared/2026-04-01-decision.md",
+  "path": "/home/user/.claude/memory/shared/2026-04-01-decision.md",
   "title": "Decision: use SQLite for metadata index",
   "category": "decision-record",
   "tier": "working",

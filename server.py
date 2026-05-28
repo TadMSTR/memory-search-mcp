@@ -25,7 +25,7 @@ def _get_client() -> OpenSearch:
             hosts=[OS_URL],
             connection_class=RequestsHttpConnection,
             use_ssl=False,
-            verify_certs=False,
+            verify_certs=False,  # no-op: connection is plain HTTP, not TLS
             timeout=10,
         )
     return _client
@@ -38,6 +38,8 @@ def _search_index(
     max_results: int,
 ) -> list[dict]:
     """Shared search helper — reuse for future indexes (search_agent_events, etc.)."""
+    global _client
+
     must_clauses = [
         {
             "multi_match": {
@@ -70,7 +72,12 @@ def _search_index(
         "size": max_results,
     }
 
-    resp = _get_client().search(index=index_name, body=body)
+    try:
+        resp = _get_client().search(index=index_name, body=body)
+    except Exception as exc:
+        _client = None  # reset singleton so next call retries the connection
+        return [{"ok": False, "error": f"OpenSearch unavailable: {exc}"}]
+
     results = []
     for hit in resp["hits"]["hits"]:
         src = hit["_source"]

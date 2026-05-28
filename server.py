@@ -38,6 +38,8 @@ def _search_index(
     max_results: int,
 ) -> list[dict]:
     """Shared search helper — reuse for future indexes (search_agent_events, etc.)."""
+    global _client
+
     must_clauses = [
         {
             "multi_match": {
@@ -70,7 +72,12 @@ def _search_index(
         "size": max_results,
     }
 
-    resp = _get_client().search(index=index_name, body=body)
+    try:
+        resp = _get_client().search(index=index_name, body=body)
+    except Exception as exc:
+        _client = None
+        return [{"ok": False, "error": f"OpenSearch unavailable: {exc}"}]
+
     results = []
     for hit in resp["hits"]["hits"]:
         src = hit["_source"]

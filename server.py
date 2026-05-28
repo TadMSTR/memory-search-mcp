@@ -25,7 +25,7 @@ def _get_client() -> OpenSearch:
             hosts=[OS_URL],
             connection_class=RequestsHttpConnection,
             use_ssl=False,
-            verify_certs=False,
+            verify_certs=False,  # no-op: connection is plain HTTP, not TLS
             timeout=10,
         )
     return _client
@@ -75,7 +75,7 @@ def _search_index(
     try:
         resp = _get_client().search(index=index_name, body=body)
     except Exception as exc:
-        _client = None
+        _client = None  # reset singleton so next call retries the connection
         return [{"ok": False, "error": f"OpenSearch unavailable: {exc}"}]
 
     results = []

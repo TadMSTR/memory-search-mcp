@@ -1,0 +1,16 @@
+[project]
+name = "memory-search-mcp"
+version = "0.2.0"
+description = "Personal-agent full-text memory search MCP server via OpenSearch"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=3.2.4,<4",
+    "opensearch-py>=2.4.0,<3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"

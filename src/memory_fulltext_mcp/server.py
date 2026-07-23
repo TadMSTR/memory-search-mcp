@@ -1,21 +1,46 @@
-"""memory-search-mcp — Personal-agent full-text memory search via OpenSearch.
+"""memory-fulltext-mcp — Personal-agent full-text memory search via OpenSearch.
 
 Scope: personal-agent ONLY. Not registered in ~/.claude/settings.json global MCP list.
-       Add new indexes in v1.5+ via the _search_index helper; common result shape is
+       Add new indexes via the _search_index helper; a common result shape is
        shared across all future tools.
+
+Named for its function — lexical full-text search — to distinguish it from
+memsearch-mcp's semantic/hybrid search (both otherwise expose a "search memory"
+surface).
 """
 
+import logging
 import os
-from datetime import datetime, timezone
-from typing import Optional
 
+import structlog
 from fastmcp import FastMCP
 from opensearchpy import OpenSearch, RequestsHttpConnection
 
-OS_URL = os.environ.get("OPENSEARCH_URL", "http://127.0.0.1:9200")
+# OpenSearch on forge is mapped to :9202 (container :9200 → host :9202).
+OS_URL = os.environ.get("OPENSEARCH_URL", "http://127.0.0.1:9202")
 OS_INDEX_MEMORY = "claude-memory"
 
-_client: Optional[OpenSearch] = None
+
+def _configure_logging() -> None:
+    """Configure structlog for JSON output at the level given by LOG_LEVEL."""
+    level = getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO)
+    logging.basicConfig(format="%(message)s", level=level)
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+
+log = structlog.get_logger("memory-fulltext-mcp")
+
+_client: OpenSearch | None = None
 
 
 def _get_client() -> OpenSearch:
@@ -76,6 +101,10 @@ def _search_index(
         resp = _get_client().search(index=index_name, body=body)
     except Exception as exc:
         _client = None  # reset singleton so next call retries the connection
+        log.error("opensearch_unavailable", index=index_name, error=str(exc))
+        # SECURITY[accepted]: returns raw exception text to the caller. Accepted risk —
+        # loopback-only server, personal-agent scope, no untrusted boundary.
+        # audit memory-mcp-trio-repo-standard-2026-07 (2026-07-23). Revisit if exposed.
         return [{"ok": False, "error": f"OpenSearch unavailable: {exc}"}]
 
     results = []
@@ -97,25 +126,26 @@ def _search_index(
 
 
 mcp = FastMCP(
-    "memory-search-mcp",
+    "memory-fulltext-mcp",
     instructions=(
-        "Full-text search across Claude Code agent memory notes stored in OpenSearch. "
-        "Personal-agent ONLY — not available to other agents. "
-        "Use search_memory to find notes by content; filter by category or tier to narrow results."
+        "Full-text (lexical) search across Claude Code agent memory notes stored in "
+        "OpenSearch. Personal-agent ONLY — not available to other agents. Use "
+        "search_memory_fulltext to find notes by content; filter by category or tier "
+        "to narrow results. For semantic/hybrid search, use memsearch-mcp instead."
     ),
 )
 
 
 @mcp.tool
-def search_memory(
+def search_memory_fulltext(
     query: str,
-    category: Optional[str] = None,
-    tier: Optional[str] = None,
+    category: str | None = None,
+    tier: str | None = None,
     max_results: int = 10,
-    created_after: Optional[str] = None,
-    created_before: Optional[str] = None,
+    created_after: str | None = None,
+    created_before: str | None = None,
 ) -> list[dict]:
-    """Search agent memory notes by content.
+    """Search agent memory notes by content (lexical full-text via OpenSearch).
 
     Args:
         query: Full-text search string.
@@ -123,7 +153,7 @@ def search_memory(
                   decision-record, design-document, research-finding-permanent,
                   competitive-snapshot).
         tier: Filter by memory tier (session, working, distilled).
-        max_results: Max results to return (1–50, default 10).
+        max_results: Max results to return (1-50, default 10).
         created_after: ISO date lower bound for created field (e.g. 2026-01-01).
         created_before: ISO date upper bound for created field.
 
@@ -140,6 +170,13 @@ def search_memory(
     return _search_index(OS_INDEX_MEMORY, query, filters, max_results)
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Console entry point — start the streamable-http MCP server."""
+    _configure_logging()
     port = int(os.environ.get("MCP_PORT", "8491"))
+    log.info("starting", host="127.0.0.1", port=port, opensearch_url=OS_URL)
     mcp.run(transport="streamable-http", host="127.0.0.1", port=port)
+
+
+if __name__ == "__main__":
+    main()

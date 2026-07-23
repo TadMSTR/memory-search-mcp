@@ -3,3 +3,19 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# Build / test artifacts
+*.egg-info/
+build/
+dist/
+.coverage
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+*.env
+
+# Core dumps
+core.*
+*.core

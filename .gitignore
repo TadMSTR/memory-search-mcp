@@ -12,5 +12,10 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
+# Secrets
+.env
+*.env
+
 # Core dumps
 core.*
+*.core

@@ -102,6 +102,9 @@ def _search_index(
     except Exception as exc:
         _client = None  # reset singleton so next call retries the connection
         log.error("opensearch_unavailable", index=index_name, error=str(exc))
+        # SECURITY[accepted]: returns raw exception text to the caller. Accepted risk —
+        # loopback-only server, personal-agent scope, no untrusted boundary.
+        # audit memory-mcp-trio-repo-standard-2026-07 (2026-07-23). Revisit if exposed.
         return [{"ok": False, "error": f"OpenSearch unavailable: {exc}"}]
 
     results = []

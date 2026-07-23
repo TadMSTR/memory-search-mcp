@@ -29,6 +29,11 @@ All notable changes to this project will be documented in this file.
   `ARCHITECTURE.md`; committed `ecosystem.config.js`.
 - Tests for the OpenSearch client singleton, logging config, and `main()` entry point.
 
+### Security
+- Audit `memory-mcp-trio-repo-standard-2026-07` (2026-07-23): clean — OpenSearch query
+  construction verified injection-free. 1 Low accepted: tool errors return raw exception
+  text to the (loopback, personal-agent) caller — `SECURITY[accepted]` in `server.py`.
+
 ## [0.2.0] - 2026-05-28
 
 ### Added

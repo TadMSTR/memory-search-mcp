@@ -1,16 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "memory-search-mcp"
-version = "0.2.0"
-description = "Personal-agent full-text memory search MCP server via OpenSearch"
-requires-python = ">=3.10"
+name = "memory-fulltext-mcp"
+version = "0.3.0"
+description = "Personal-agent full-text (lexical) memory search MCP server via OpenSearch"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
 dependencies = [
     "fastmcp>=3.2.4,<4",
     "opensearch-py>=2.4.0,<3.0",
+    "structlog>=24.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "pip-audit>=2.7",
+]
 
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+[project.scripts]
+memory-fulltext-mcp = "memory_fulltext_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.coverage.run]
+source = ["memory_fulltext_mcp"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

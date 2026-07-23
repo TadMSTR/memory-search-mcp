@@ -1,2 +1,3 @@
 fastmcp>=3.2.4,<4
 opensearch-py>=2.4.0,<3.0
+structlog>=24.0

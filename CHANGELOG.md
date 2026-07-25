@@ -14,6 +14,14 @@ All notable changes to this project will be documented in this file.
   response size. Coordinated with the `body_excerpt`→`body` field rename in the
   `claude-memory` OpenSearch mapping (a full re-sync/backfill accompanies this deploy).
 
+### Security
+- Audit `memory-fulltext-retention-2026-07` (2026-07-25): clean — 0 Critical/High/Medium.
+  1 Low accepted: full-body permanent retention widens the sensitive-data exposure surface
+  (any secret pasted into a `shared/`/`agents/` note is stored in full and stays searchable
+  forever) — same trust boundary as before, loopback-only, single-tenant; recorded in
+  host-forge `accepted-risks.md`. The `body_excerpt`→`body` rename was verified
+  injection-free (query built via `json.dumps`/parameterized).
+
 ### Notes
 - Documents the index's role as the **permanent lexical retention tier** for agent notes
   (full body, no expiry, no deletes; `shared/`+`agents/` only). See ARCHITECTURE.md.

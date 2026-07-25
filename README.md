@@ -17,9 +17,11 @@ corpus without surfacing it to shared agents or LibreChat. Part of the
 
 ## What It Does
 
-Claude Code agents accumulate memory notes in `~/.claude/memory/`. This server indexes
-body excerpts (first 2KB per note) into OpenSearch and exposes a single
-`search_memory_fulltext` tool for full-text, relevance-ranked queries across the corpus.
+Claude Code agents accumulate memory notes in `~/.claude/memory/`. This server searches
+the `claude-memory` OpenSearch index — the **permanent lexical retention tier** for
+agent notes (full note body, no expiry; `shared/` + `agents/` only) — and exposes a
+single `search_memory_fulltext` tool for full-text, relevance-ranked queries across the
+corpus. Responses cap each `snippet` at 500 chars.
 
 It is the body-search counterpart to
 [memory-metadata-mcp](https://github.com/TadMSTR/memory-metadata-mcp), which handles
@@ -29,7 +31,7 @@ structured metadata queries without touching note bodies.
 
 | Tool | What It Does |
 |------|-------------|
-| `search_memory_fulltext` | Full-text search across all memory note body excerpts. Supports filtering by `category`, `tier`, and `created` date range. Returns ranked results with snippets. |
+| `search_memory_fulltext` | Full-text search across full memory note bodies. Supports filtering by `category`, `tier`, and `created` date range. Returns ranked results with snippets. |
 
 ### Result shape
 
@@ -71,13 +73,13 @@ structured metadata queries without touching note bodies.
 ## Architecture
 
 ```
-~/.claude/memory/**/*.md
+~/.claude/memory/{shared,agents}/**/*.md   (docs/, .expired/, quarantine/ excluded)
         │
-        │  (memory-os-sync PM2 daemon, 30s batches)
+        │  (memory-os-sync PM2 daemon, 30s batches — full body, no deletes)
         ▼
 OpenSearch 127.0.0.1:9202
 index: claude-memory
-fields: path, title, category, tier, created, body_excerpt (first 2KB)
+fields: path, title, category, tier, created, body (full note body)
         │
         │  (this server)
         ▼

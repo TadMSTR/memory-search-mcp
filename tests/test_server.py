@@ -16,7 +16,7 @@ def _make_hit(path: str, title: str, score: float = 1.0, body: str = "excerpt") 
             "category": "decision-record",
             "tier": "working",
             "created": "2026-01-01",
-            "body_excerpt": body,
+            "body": body,
         },
     }
 
@@ -104,6 +104,22 @@ def test_search_filter_tier_included_in_query():
     body = mock_client.search.call_args[1]["body"]
     filters = body["query"]["bool"]["filter"]
     assert any(f.get("term", {}).get("tier") == "working" for f in filters)
+
+
+# ── full-body field (retention rename body_excerpt → body) ────────────────────
+
+
+def test_search_queries_full_body_field():
+    mock_client = MagicMock()
+    mock_client.search.return_value = {"hits": {"hits": []}}
+    with patch.object(ms, "_get_client", return_value=mock_client):
+        ms.search_memory_fulltext(query="q")
+    body = mock_client.search.call_args[1]["body"]
+    fields = body["query"]["bool"]["must"][0]["multi_match"]["fields"]
+    assert any(f.startswith("body") for f in fields)
+    assert not any("body_excerpt" in f for f in fields)
+    assert "body" in body["_source"]
+    assert "body_excerpt" not in body["_source"]
 
 
 # ── OpenSearch down ───────────────────────────────────────────────────────────

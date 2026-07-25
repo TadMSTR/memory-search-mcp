@@ -69,7 +69,7 @@ def _search_index(
         {
             "multi_match": {
                 "query": query,
-                "fields": ["body_excerpt^3", "title^2", "path"],
+                "fields": ["body^3", "title^2", "path"],
                 "type": "best_fields",
                 "fuzziness": "AUTO",
             }
@@ -93,7 +93,7 @@ def _search_index(
                 "filter": filter_clauses,
             }
         },
-        "_source": ["path", "title", "category", "tier", "created", "body_excerpt"],
+        "_source": ["path", "title", "category", "tier", "created", "body"],
         "size": max_results,
     }
 
@@ -118,7 +118,7 @@ def _search_index(
                 "category": src.get("category", ""),
                 "tier": src.get("tier", ""),
                 "created": src.get("created", ""),
-                "snippet": src.get("body_excerpt", "")[:500],
+                "snippet": src.get("body", "")[:500],
                 "score": round(hit["_score"], 3),
             }
         )
